@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{{ PRODUCT_NAME }}} - Preview</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: "Fira Sans", sans-serif; background-color: #fdfdfd; }
+    .py-60 { padding: 40px 0; }
+    .container { max-width: 1250px; margin: 0 auto; padding: 0 20px; }
+
+    .playable-viewer-header {
+        display: flex; justify-content: space-between; align-items: center;
+        background: #f6f6f6; padding: 15px 30px; border-radius: 10px; margin-bottom: 50px;
+    }
+    .logo { width: 380px; flex-shrink: 0; }
+    .logo h1 { font-size: 24px; color: #333; margin: 0; }
+    
+    .header-right {
+        flex: 1; display: flex; justify-content: center; align-items: center; padding-right: 50px;
+    }
+
+    .device-container { display: flex; align-items: center; gap: 15px; }
+    .device, .reload-btn {
+        display: flex; flex-direction: column; align-items: center;
+        cursor: pointer; color: #acacac; font-size: 13px; font-weight: 700;
+        text-transform: uppercase; gap: 8px;
+    }
+    .device i, .reload-btn i { font-size: 24px; }
+    .device.landscape i { transform: rotate(-90deg); }
+    .device:hover, .reload-btn:hover { color: #666; }
+    .device.active { color: #000; }
+    .divider { width: 1px; height: 35px; background-color: #dcdcdc; margin: 0 15px; }
+
+    .reload-btn-wrapper {
+        border-left: 1px solid #dcdcdc; padding-left: 30px; margin-left: 15px;
+        display: flex; align-items: center;
+    }
+
+    .playable-viewer-content { display: flex; align-items: flex-start; }
+    .playable-viewer-title { width: 380px; flex-shrink: 0; }
+    .playable-viewer-title h2 { font-size: 26px; font-weight: 700; margin-bottom: 30px; color: #111; }
+    .qr-container {
+        border: 1px solid #e8e8e8; padding: 45px 30px; border-radius: 12px;
+        background: #fff; text-align: center; max-width: 380px;
+    }
+    .qr-container h4 { margin-bottom: 25px; color: #111; font-weight: 400; font-size: 15px; }
+    .qr-container img { width: 200px; height: 200px; }
+
+    .playable-viewer-player { flex: 1; display: flex; justify-content: center; }
+    .viewer-player-inner {
+        position: relative; background: linear-gradient(145deg, #eee, #f2f2f2); 
+        border-radius: 20px; padding: 6px;
+    }
+
+    .playable-viewer-content.mobile-portrait .viewer-player-inner { width: 380px; min-width: 380px; height: 720px; }
+    .playable-viewer-content.mobile-landscape .viewer-player-inner { width: 720px; min-width: 720px; height: 380px; }
+    .playable-viewer-content.tab-portrait .viewer-player-inner { width: 600px; min-width: 600px; height: 700px; }
+    .playable-viewer-content.tab-landscape .viewer-player-inner { width: 700px; min-width: 700px; height: 500px; }
+
+    .viewer-player-inner iframe { width: 100%; height: 100%; border: none; border-radius: 14px; background: #000; display: block; }
+
+    @media (max-width: 1024px) {
+        .playable-viewer-header { flex-wrap: wrap; justify-content: center; gap: 20px;}
+        .header-right { padding-right: 0; }
+        .logo { width: auto; text-align: center; }
+        .playable-viewer-content { flex-direction: column; align-items: center; gap: 40px; }
+        .playable-viewer-title { width: auto; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="playable-viewer-area py-60">
+    <div class="container">
+
+      <div class="playable-viewer-header">
+          <div class="logo">
+            <h1 style="display:flex; align-items:center; gap: 10px;">
+                <img src="https://pixeltubgame.com/assets/images/icon.png" style="height:45px;" alt=""> 
+            </h1>
+          </div>
+          <div class="header-right">
+              <div class="device-container">
+                <div class="device active" data-type="mobile-portrait">
+                    <i class="fa-solid fa-mobile-screen"></i><span>Mobile</span>
+                </div>
+                <div class="divider"></div>
+                <div class="device landscape" data-type="mobile-landscape">
+                  <i class="fa-solid fa-mobile-screen"></i><span>Mobile</span>
+                </div>
+                <div class="divider"></div>
+                <div class="device" data-type="tab-portrait">
+                    <i class="fa-solid fa-tablet-screen-button"></i><span>Tab</span>
+                </div>
+                <div class="divider"></div>
+                <div class="device landscape" data-type="tab-landscape">
+                    <i class="fa-solid fa-tablet-screen-button"></i><span>Tab</span>
+                </div>
+              </div>
+              <div class="reload-btn-wrapper">
+                <div id="reloadBtn" class="reload-btn">
+                    <i class="fa-solid fa-arrow-rotate-right"></i><span>Reload</span>
+                </div>
+              </div>
+          </div>
+       </div>
+
+      <div class="playable-viewer-content mobile-portrait" id="mainContent">
+        <div class="playable-viewer-title">
+            <h2>{{{ PRODUCT_NAME }}}</h2>
+            <div class="qr-container">
+                <h4>Preview On Your Mobile Device</h4>
+                <a id="qrLink" href="full.html" target="_blank">
+                  <img src="#" alt="QR Code" id="qrcode">
+                </a>
+            </div>
+        </div>
+
+        <div class="playable-viewer-player">
+          <div class="viewer-player-inner">
+            <iframe id="gameFrame" src="index.html"></iframe>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    const devices = document.querySelectorAll('.device');
+    const mainContent = document.getElementById('mainContent');
+    const iframe = document.getElementById('gameFrame');
+    const reloadBtn = document.getElementById('reloadBtn');
+    
+    const qrImg = document.getElementById('qrcode');
+    const qrLink = document.getElementById('qrLink');
+    const fullUrl = window.location.href.split('preview.html')[0] + 'full.html';
+    
+    qrLink.href = fullUrl;
+    qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(fullUrl);
+
+    devices.forEach(device => {
+        device.addEventListener('click', function() {
+            devices.forEach(d => d.classList.remove('active'));
+            this.classList.add('active');
+            mainContent.className = 'playable-viewer-content ' + this.getAttribute('data-type');
+        });
+    });
+
+    reloadBtn.addEventListener('click', function() {
+        const icon = this.querySelector('i');
+        icon.style.transform = 'rotate(360deg)';
+        icon.style.transition = 'transform 0.5s';
+        setTimeout(() => { icon.style.transform = 'none'; icon.style.transition = 'none'; }, 500);
+        iframe.src = iframe.src;
+    });
+  </script>
+</body>
+</html>
