@@ -112,7 +112,7 @@ public class GameOverManager2048 : MonoBehaviour
             // Set the score text
             if (gameOverScoreText != null && scoreManager != null)
             {
-                gameOverScoreText.text = "Score: " + scoreManager.GetScore().ToString();
+                gameOverScoreText.text =scoreManager.GetScore().ToString();
             }
 
             // Calculate coin reward based on score
@@ -121,7 +121,7 @@ public class GameOverManager2048 : MonoBehaviour
             // Set coin reward text
             if (gameOverCoinsText != null)
             {
-                gameOverCoinsText.text = "+" + coinReward.ToString() + " coins";
+                gameOverCoinsText.text = "+" + coinReward.ToString();
             }
 
             // Award coins
