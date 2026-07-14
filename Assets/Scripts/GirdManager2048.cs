@@ -1120,7 +1120,10 @@ public class GridManager2048 : MonoBehaviour
             }
 
             if (rectTransform != null)
+            {
                 rectTransform.anchoredPosition = targetPosition;
+                tile.PlayLandingBounce();
+            }
         }
 
         // After all movements and merges are complete

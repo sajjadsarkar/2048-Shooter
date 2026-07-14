@@ -1,12 +1,16 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using DG.Tweening;
 
 public class Tile2048 : MonoBehaviour
 {
     [SerializeField] private TextMeshProUGUI numberText;
     [SerializeField] private Image backgroundImage;
     [SerializeField] private Image strokeImage;
+    [SerializeField] private bool enableLandingBounce = true;
+
+    public bool EnableLandingBounce { get => enableLandingBounce; set => enableLandingBounce = value; }
 
     private int value;
 
@@ -136,5 +140,27 @@ public class Tile2048 : MonoBehaviour
         float brightness = 0.9f - (value * 0.0005f);
         Color tile = Color.HSVToRGB(hue, saturation, brightness);
         return (tile, DeriveStroke(tile));
+    }
+
+    public void PlayLandingBounce()
+    {
+        if (!enableLandingBounce) return;
+
+        RectTransform rt = GetComponent<RectTransform>();
+        if (rt != null)
+        {
+            DOTween.Kill(rt);
+            rt.localScale = Vector3.one;
+
+            Sequence seq = DOTween.Sequence();
+            // Soft Squash (Y squashes down, X expands slightly for a squishy/soft feel)
+            seq.Append(rt.DOScale(new Vector3(1.05f, 0.92f, 1f), 0.06f).SetEase(Ease.OutSine));
+            // Soft Stretch (Y stretches up, X shrinks slightly)
+            seq.Append(rt.DOScale(new Vector3(0.97f, 1.04f, 1f), 0.06f).SetEase(Ease.InOutSine));
+            // Smooth Settle
+            seq.Append(rt.DOScale(Vector3.one, 0.08f).SetEase(Ease.OutSine));
+            seq.SetTarget(rt);
+            seq.Play();
+        }
     }
 }

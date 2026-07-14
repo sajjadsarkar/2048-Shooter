@@ -519,6 +519,10 @@ public class ShootingManager2048 : MonoBehaviour, IPointerClickHandler, IPointer
         if (projectile != null && rt != null)
         {
             rt.anchoredPosition = finalPosition;
+            if (tile != null)
+            {
+                tile.PlayLandingBounce();
+            }
         }
 
         // Destroy the path highlight
