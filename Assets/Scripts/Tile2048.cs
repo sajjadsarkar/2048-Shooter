@@ -6,26 +6,46 @@ public class Tile2048 : MonoBehaviour
 {
     [SerializeField] private TextMeshProUGUI numberText;
     [SerializeField] private Image backgroundImage;
+    [SerializeField] private Image strokeImage;
 
     private int value;
 
-    // Predefined colors for powers of 2
-    private static readonly Color[] powerOfTwoColors = new Color[]
-    {
-        new Color(0f, 0.505f, 0.71f),     // 2: #0081b5
-        new Color(0.98f, 0.498f, 0.255f),  // 4: #fa7f41
-        new Color(0.894f, 0.322f, 0.533f), // 8: #e45288
-        new Color(0.72f, 0.168f, 0.97f),   // 16: #b82bf8
-        new Color(0.635f, 0.306f, 0.47f),  // 32: #a24e78
-        new Color(0.734f, 0.77f, 0.024f),  // 64: #bbc406
-        new Color(0.988f, 0.259f, 0.388f), // 128: #fc4263
-        new Color(0.55f, 0.15f, 0.85f),    // 256: Violet
-        new Color(0.20f, 0.60f, 0.85f),    // 512: Cyan Blue
-        new Color(0.98f, 0.72f, 0.20f),    // 1024: Gold
-        new Color(0.85f, 0.20f, 0.72f),    // 2048: Magenta
-    };
+    // Tile (fill) colors for powers of 2 -> index = log2(value) - 1
+    private static readonly Color[] tileColors = new Color[11];
+    // Matching stroke colors for each power of 2
+    private static readonly Color[] strokeColors = new Color[11];
 
-    // Predefined colors for multiples of 3
+    static Tile2048()
+    {
+        Color[] t =
+        {
+            Hex(0x68ADF1), Hex(0xFF863B), Hex(0xF8829C), Hex(0x6DC29C), Color.black, Color.black,
+            Hex(0x62D8D8), Hex(0xFF6269), Hex(0x97CE5F), Hex(0xEF83DB), Hex(0xF0A151)
+        };
+        Color[] s =
+        {
+            Hex(0x048EFF), Hex(0xFFB575), Hex(0xFF5384), Hex(0x06AD7E), Color.black, Color.black,
+            Hex(0x00AECD), Hex(0xFF3038), Hex(0x55AA00), Hex(0xEF37F9), Hex(0xFFE761)
+        };
+        for (int i = 0; i < 11; i++) { tileColors[i] = t[i]; strokeColors[i] = s[i]; }
+
+        // Fill the gaps (32 = index 4, 64 = index 5) with a similar but slightly
+        // shifted gradient between the neighbouring defined colors so they don't match.
+        tileColors[4] = Color.Lerp(tileColors[3], tileColors[6], 0.33f);
+        tileColors[5] = Color.Lerp(tileColors[3], tileColors[6], 0.66f);
+        strokeColors[4] = Color.Lerp(strokeColors[3], strokeColors[6], 0.33f);
+        strokeColors[5] = Color.Lerp(strokeColors[3], strokeColors[6], 0.66f);
+    }
+
+    private static Color Hex(int hex)
+    {
+        return new Color(
+            ((hex >> 16) & 0xFF) / 255f,
+            ((hex >> 8) & 0xFF) / 255f,
+            (hex & 0xFF) / 255f);
+    }
+
+    // Predefined tile colors for multiples of 3
     private static readonly Color[] multipleOfThreeColors = new Color[]
     {
         new Color(0.95f, 0.7f, 0.47f),     // 3: Soft Orange
@@ -49,6 +69,14 @@ public class Tile2048 : MonoBehaviour
     {
         if (!numberText) numberText = GetComponentInChildren<TextMeshProUGUI>();
         if (!backgroundImage) backgroundImage = GetComponent<Image>();
+        if (!strokeImage)
+        {
+            // Stroke is a child Image (other than the tile's own background)
+            foreach (var img in GetComponentsInChildren<Image>())
+            {
+                if (img != backgroundImage) { strokeImage = img; break; }
+            }
+        }
     }
 
     public void Initialize(int startValue = 2) => Value = startValue;
@@ -56,28 +84,34 @@ public class Tile2048 : MonoBehaviour
     private void UpdateTileAppearance()
     {
         numberText.text = value.ToString();
-        backgroundImage.color = GetTileColor(value);
-        numberText.color = GetReadableTextColor(backgroundImage.color);
+        (Color tile, Color stroke) = GetTileColors(value);
+        backgroundImage.color = tile;
+        if (strokeImage) strokeImage.color = stroke;
+        numberText.color = Color.white;
     }
 
-    private Color GetTileColor(int value)
+    private (Color tile, Color stroke) GetTileColors(int value)
     {
-        // Check if the value is a power of 2
+        // Power of 2 -> use the exact tile + stroke pair
         if (IsPowerOfTwo(value))
         {
             int index = Mathf.FloorToInt(Mathf.Log(value, 2)) - 1;
-            if (index < powerOfTwoColors.Length) return powerOfTwoColors[index];
+            if (index < tileColors.Length) return (tileColors[index], strokeColors[index]);
         }
 
-        // Check if the value is a multiple of 3
+        // Multiple of 3 -> use predefined tile color, derive a similar stroke
         if (value % 3 == 0)
         {
             int index = Mathf.FloorToInt(Mathf.Log(value / 3, 2)) - 1;
-            if (index < multipleOfThreeColors.Length) return multipleOfThreeColors[index];
+            if (index < multipleOfThreeColors.Length)
+            {
+                Color tile = multipleOfThreeColors[index];
+                return (tile, DeriveStroke(tile));
+            }
         }
 
-        // For all other numbers, generate a unique color
-        return GenerateUniqueColor(value);
+        // Anything else -> generate a unique tile + slightly different stroke
+        return GenerateColorPair(value);
     }
 
     private bool IsPowerOfTwo(int value)
@@ -85,19 +119,22 @@ public class Tile2048 : MonoBehaviour
         return (value != 0) && ((value & (value - 1)) == 0);
     }
 
-    private Color GenerateUniqueColor(int value)
+    // Build a stroke color that is similar to the tile but slightly shifted
+    private Color DeriveStroke(Color tile)
     {
-        // Use value to calculate a unique hue
-        float hue = (value * 0.0015f) % 1.0f; // Adjust multiplier for finer hue shifts
-        float saturation = 0.85f; // High saturation for vibrant colors
-        float brightness = 0.9f - (value * 0.0005f); // Slightly reduce brightness for higher values
-
-        return Color.HSVToRGB(hue, saturation, brightness);
+        Color.RGBToHSV(tile, out float h, out float s, out float v);
+        float strokeH = (h + 0.04f) % 1f;
+        float strokeS = Mathf.Clamp01(s + 0.10f);
+        float strokeV = Mathf.Clamp01(v - 0.10f);
+        return Color.HSVToRGB(strokeH, strokeS, strokeV);
     }
 
-    private Color GetReadableTextColor(Color bg)
+    private (Color tile, Color stroke) GenerateColorPair(int value)
     {
-        return (bg.r * 0.299f + bg.g * 0.587f + bg.b * 0.114f) > 0.6f
-            ? Color.black : Color.white;
+        float hue = (value * 0.0015f) % 1.0f;
+        float saturation = 0.85f;
+        float brightness = 0.9f - (value * 0.0005f);
+        Color tile = Color.HSVToRGB(hue, saturation, brightness);
+        return (tile, DeriveStroke(tile));
     }
 }
