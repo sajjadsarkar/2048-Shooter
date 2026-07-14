@@ -194,39 +194,16 @@ public class GameOverManager2048 : MonoBehaviour
     // Call this from restart button
     public void RestartGame()
     {
-        // Hide game over panel
-        if (gameOverPanel != null)
-        {
-            gameOverPanel.SetActive(false);
-        }
-
-        // Destroy the displayed highest tile so it doesn't linger
-        if (spawnedHighestTile != null)
-        {
-            Destroy(spawnedHighestTile);
-            spawnedHighestTile = null;
-        }
-
-        ResetGameOver();
-
-        // Reset score if needed
-        if (scoreManager != null)
-        {
-            scoreManager.ResetScore();
-        }
-
-        // Reset coins for the new game session
+        // Reset coins for the new game session (CoinManager persists across scene loads)
         if (CoinManager2048.Instance != null)
         {
             CoinManager2048.Instance.ResetCoins();
         }
 
-        // Call reset on the grid manager (you'll need to implement this)
-        if (gridManager != null)
-        {
-            // Assuming you have or will add a ResetGrid method to GridManager2048
-            // gridManager.ResetGrid();
-        }
+        // Reload the current scene to reset everything (grid, score, tiles, preview, etc.)
+        UnityEngine.SceneManagement.SceneManager.LoadScene(
+            UnityEngine.SceneManagement.SceneManager.GetActiveScene().name
+        );
     }
 
     // Public method to reset the game over state (can be called when restarting the game)
