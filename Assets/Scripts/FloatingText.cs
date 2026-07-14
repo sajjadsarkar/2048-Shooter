@@ -15,7 +15,7 @@ public class FloatingText : MonoBehaviour
         scoreText.text = "+" + score.ToString();
 
         // Always set text color to white for better visibility
-        scoreText.color = Color.white;
+        scoreText.color = Color.black;
 
         // Start the animation
         AnimateText();

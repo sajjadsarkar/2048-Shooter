@@ -15,7 +15,7 @@ public class ComboText : MonoBehaviour
         comboText.text = "Combo x" + comboCount.ToString();
 
         // Set text color to white for visibility
-        comboText.color = Color.white;
+        comboText.color = Color.black;
 
         // Start the animation
         AnimateText();
