@@ -25,8 +25,12 @@ public static class NumberFormatter
     // Single character suffixes for higher numbers (after reaching duodecillion)
     private static readonly char[] letterSuffixes = "abcdefghijklmnopqrstuvwxyz".ToCharArray();
 
+    // Maximum characters allowed so the value fits the UI size (e.g. "12.3K", "1.2M")
+    private const int MaxLength = 5;
+
     /// <summary>
-    /// Format a large number to a shorter, more readable string
+    /// Format a large number to a shorter, more readable string that fits the UI size.
+    /// Uses K/M/B/T/... suffixes for big numbers and trims decimals to stay compact.
     /// </summary>
     /// <param name="number">The number to format</param>
     /// <returns>Formatted string representation of the number</returns>
@@ -44,50 +48,50 @@ public static class NumberFormatter
         // For 10K+, we want to start at magnitude 1
         double magnitude = Mathf.Floor(Mathf.Log10(number) / 3);
 
-        // If within our predefined suffixes, use them
+        // Resolve the suffix for this magnitude (predefined list or generated letter suffix)
+        string suffix = ResolveSuffix((int)magnitude);
+
+        // Calculate the scaled value - use System.Math.Pow for double precision
+        double scaled = number / System.Math.Pow(1000, magnitude);
+
+        // Try progressively shorter formats so the result fits MaxLength characters.
+        // Examples: "12.3K" -> "12K" -> "12K" (when integer)
+        string[] formats = { "0.##", "0.#", "0" };
+        foreach (string fmt in formats)
+        {
+            string candidate = scaled.ToString(fmt) + suffix;
+            if (candidate.Length <= MaxLength)
+                return candidate;
+        }
+
+        // Fallback: most compact form
+        return scaled.ToString("0") + suffix;
+    }
+
+    private static string ResolveSuffix(int magnitude)
+    {
         if (magnitude < suffixes.Count)
+            return suffixes[magnitude];
+
+        // Generate a double letter suffix for really huge numbers
+        int firstLetterIndex = (int)((magnitude - suffixes.Count) / letterSuffixes.Length);
+        int secondLetterIndex = (int)((magnitude - suffixes.Count) % letterSuffixes.Length);
+
+        string suffix = "";
+
+        // Handle extremely large numbers by adding more letters
+        if (firstLetterIndex >= letterSuffixes.Length)
         {
-            // Get the suffix for this magnitude
-            string suffix = suffixes[(int)magnitude];
+            int thirdLetterIndex = firstLetterIndex / letterSuffixes.Length - 1;
+            firstLetterIndex = firstLetterIndex % letterSuffixes.Length;
 
-            // Calculate the scaled value (e.g., 12345 becomes 12.345 for K)
-            double scaled = number / System.Math.Pow(1000, magnitude);
-
-            // Format with 1 decimal place if not a whole number, otherwise as integer
-            string formatted = scaled.ToString("0.#");
-
-            return formatted + suffix;
-        }
-        else
-        {
-            // Generate a double letter suffix for really huge numbers
-            // For numbers beyond our predefined suffixes
-            int firstLetterIndex = (int)((magnitude - suffixes.Count) / letterSuffixes.Length);
-            int secondLetterIndex = (int)((magnitude - suffixes.Count) % letterSuffixes.Length);
-
-            string suffix = "";
-
-            // Handle extremely large numbers by adding more letters
-            if (firstLetterIndex >= letterSuffixes.Length)
+            if (thirdLetterIndex < letterSuffixes.Length)
             {
-                int thirdLetterIndex = firstLetterIndex / letterSuffixes.Length - 1;
-                firstLetterIndex = firstLetterIndex % letterSuffixes.Length;
-
-                if (thirdLetterIndex < letterSuffixes.Length)
-                {
-                    suffix = letterSuffixes[thirdLetterIndex].ToString();
-                }
+                suffix = letterSuffixes[thirdLetterIndex].ToString();
             }
-
-            suffix += letterSuffixes[firstLetterIndex].ToString() + letterSuffixes[secondLetterIndex].ToString();
-
-            // Calculate the scaled value - use System.Math.Pow for double precision
-            double scaled = number / System.Math.Pow(1000, magnitude);
-
-            // Format with 1 decimal place if not a whole number
-            string formatted = scaled.ToString("0.#");
-
-            return formatted + suffix;
         }
+
+        suffix += letterSuffixes[firstLetterIndex].ToString() + letterSuffixes[secondLetterIndex].ToString();
+        return suffix;
     }
 }

@@ -1,5 +1,6 @@
 using UnityEngine;
 using TMPro;
+using DG.Tweening;
 using System;
 
 public class CoinManager2048 : MonoBehaviour
@@ -37,13 +38,13 @@ public class CoinManager2048 : MonoBehaviour
     private void Start()
     {
         // Initial display update
-        UpdateCoinDisplay();
+        AnimatedNumberText.SetImmediate(coinText, coins);
     }
 
     public void ResetCoins()
     {
         coins = 0;
-        UpdateCoinDisplay();
+        AnimatedNumberText.SetImmediate(coinText, coins);
         OnCoinsChanged?.Invoke(coins);
         Debug.Log("Coins reset to 0 for a new game.");
     }
@@ -53,7 +54,7 @@ public class CoinManager2048 : MonoBehaviour
         if (amount <= 0) return;
 
         coins += amount;
-        UpdateCoinDisplay();
+        AnimatedNumberText.Animate(coinText, coins);
 
         // Trigger event
         OnCoinsChanged?.Invoke(coins);
@@ -77,7 +78,7 @@ public class CoinManager2048 : MonoBehaviour
 
         // Deduct coins
         coins -= amount;
-        UpdateCoinDisplay();
+        AnimatedNumberText.Animate(coinText, coins);
 
         // Trigger event
         OnCoinsChanged?.Invoke(coins);
@@ -89,14 +90,6 @@ public class CoinManager2048 : MonoBehaviour
     public int GetCoins()
     {
         return coins;
-    }
-
-    private void UpdateCoinDisplay()
-    {
-        if (coinText != null)
-        {
-            coinText.text = coins.ToString();
-        }
     }
 
     private void DisplayCoinEarned(int amount)

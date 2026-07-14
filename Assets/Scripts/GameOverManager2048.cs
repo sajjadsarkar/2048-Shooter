@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections;
 using TMPro;
+using DG.Tweening;
 
 public class GameOverManager2048 : MonoBehaviour
 {
@@ -18,6 +19,9 @@ public class GameOverManager2048 : MonoBehaviour
 
     private bool isGameOver = false;
     private GameObject spawnedHighestTile; // Keep reference so we can destroy on restart
+
+    private Tween gameOverScoreTween;
+    private Tween gameOverCoinsTween;
 
     private void Start()
     {
@@ -109,19 +113,32 @@ public class GameOverManager2048 : MonoBehaviour
 
         if (gameOverPanel != null)
         {
-            // Set the score text
+            // Set the score text (animate 0 -> target)
             if (gameOverScoreText != null && scoreManager != null)
             {
-                gameOverScoreText.text =scoreManager.GetScore().ToString();
+                int finalScore = scoreManager.GetScore();
+                gameOverScoreTween.Kill();
+                gameOverScoreTween = DOTween.To(() => 0f, x =>
+                {
+                    gameOverScoreText.text = NumberFormatter.FormatNumber(Mathf.RoundToInt(x));
+                }, finalScore, 1f)
+                .SetEase(Ease.OutCubic)
+                .OnComplete(() => gameOverScoreText.text = NumberFormatter.FormatNumber(finalScore));
             }
 
             // Calculate coin reward based on score
             int coinReward = CalculateCoinReward();
 
-            // Set coin reward text
+            // Set coin reward text (animate 0 -> target with "+" prefix)
             if (gameOverCoinsText != null)
             {
-                gameOverCoinsText.text = "+" + coinReward.ToString();
+                gameOverCoinsTween.Kill();
+                gameOverCoinsTween = DOTween.To(() => 0f, x =>
+                {
+                    gameOverCoinsText.text = "+" + NumberFormatter.FormatNumber(Mathf.RoundToInt(x));
+                }, coinReward, 1f)
+                .SetEase(Ease.OutCubic)
+                .OnComplete(() => gameOverCoinsText.text = "+" + NumberFormatter.FormatNumber(coinReward));
             }
 
             // Award coins

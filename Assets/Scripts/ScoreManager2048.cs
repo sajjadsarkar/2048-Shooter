@@ -1,5 +1,6 @@
 using UnityEngine;
 using TMPro;
+using DG.Tweening;
 
 public class ScoreManager2048 : MonoBehaviour
 {
@@ -13,42 +14,27 @@ public class ScoreManager2048 : MonoBehaviour
     private void Start()
     {
         LoadBestScore();
-        UpdateScoreDisplay();
-        UpdateBestScoreDisplay();
+        AnimatedNumberText.SetImmediate(scoreText, currentScore);
+        AnimatedNumberText.SetImmediate(bestScoreText, bestScore);
     }
 
     public void AddScore(int points)
     {
         currentScore += points;
-        UpdateScoreDisplay();
+
+        // Animate score count-up (0 -> target on first gain)
+        AnimatedNumberText.Animate(scoreText, currentScore);
 
         // Check if current score is a new best
         if (currentScore > bestScore)
         {
             bestScore = currentScore;
-            UpdateBestScoreDisplay();
+            AnimatedNumberText.Animate(bestScoreText, bestScore);
             SaveBestScore();
         }
 
         // Log the score change (optional, for debugging)
         Debug.Log($"Score increased by {points}. New score: {currentScore}");
-    }
-
-    private void UpdateScoreDisplay()
-    {
-        if (scoreText != null)
-        {
-            // Use NumberFormatter to format the score for better readability
-            scoreText.text = NumberFormatter.FormatNumber(currentScore);
-        }
-    }
-
-    private void UpdateBestScoreDisplay()
-    {
-        if (bestScoreText != null)
-        {
-            bestScoreText.text = NumberFormatter.FormatNumber(bestScore);
-        }
     }
 
     private void LoadBestScore()
@@ -76,14 +62,14 @@ public class ScoreManager2048 : MonoBehaviour
     public void ResetScore()
     {
         currentScore = 0;
-        UpdateScoreDisplay();
+        AnimatedNumberText.SetImmediate(scoreText, currentScore);
     }
 
     // Reset best score (could be used in settings menu)
     public void ResetBestScore()
     {
         bestScore = 0;
-        UpdateBestScoreDisplay();
+        AnimatedNumberText.SetImmediate(bestScoreText, bestScore);
         SaveBestScore();
     }
 }
