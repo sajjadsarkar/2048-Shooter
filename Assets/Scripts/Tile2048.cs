@@ -14,6 +14,11 @@ public class Tile2048 : MonoBehaviour
 
     private int value;
 
+    // Monotonically increasing counter so we can always pick the newest
+    // tile in a connected group as the merge center (deterministic, no conflicts).
+    private static int globalCreationCounter = 0;
+    public int CreationOrder { get; private set; }
+
     // Tile (fill) colors for powers of 2 -> index = log2(value) - 1
     private static readonly Color[] tileColors = new Color[11];
     // Matching stroke colors for each power of 2
@@ -71,6 +76,8 @@ public class Tile2048 : MonoBehaviour
 
     private void Awake()
     {
+        CreationOrder = globalCreationCounter++;
+
         if (!numberText) numberText = GetComponentInChildren<TextMeshProUGUI>();
         if (!backgroundImage) backgroundImage = GetComponent<Image>();
         if (!strokeImage)

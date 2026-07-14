@@ -109,6 +109,9 @@ public class TileClickHandler : MonoBehaviour, IPointerClickHandler
         if (column > 0) gridManager.ApplyGravity(column - 1);
         if (column < gridManager.Width - 1) gridManager.ApplyGravity(column + 1);
 
+        // Resolve any new merges created by the gap the deletion left behind
+        gridManager.RequestResolve();
+
         // Destroy the game object
         Destroy(gameObject);
     }
