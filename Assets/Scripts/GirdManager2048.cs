@@ -28,8 +28,10 @@ public class GridManager2048 : MonoBehaviour
     private Tile2048[,] gridCells;
 
     // Track if gravity operations are in progress
-    private bool isApplyingGravity = false;
-    public bool IsApplyingGravity => isApplyingGravity;
+    // Counter instead of bool — multiple columns can run gravity simultaneously;
+    // only report "done" when ALL of them have finished.
+    private int activeGravityOps = 0;
+    public bool IsApplyingGravity => activeGravityOps > 0;
 
     public int Width => width;
     public int Height => height;
@@ -1065,7 +1067,7 @@ public class GridManager2048 : MonoBehaviour
         // Second pass: Execute all moves in order (from top to bottom)
         if (moves.Count > 0)
         {
-            isApplyingGravity = true; // Set flag when starting gravity operations
+            activeGravityOps++; // Increment counter before starting so IsApplyingGravity stays true
             StartCoroutine(MoveTilesUp(column, moves));
         }
     }
@@ -1126,8 +1128,8 @@ public class GridManager2048 : MonoBehaviour
             }
         }
 
-        // After all movements and merges are complete
-        isApplyingGravity = false;
+        // Decrement counter — only reaches zero when ALL concurrent gravity ops are done
+        activeGravityOps = Mathf.Max(0, activeGravityOps - 1);
 
         // Verify column integrity after all movements and merges
         yield return StartCoroutine(VerifyColumnIntegrity(column));
@@ -1279,5 +1281,22 @@ public class GridManager2048 : MonoBehaviour
         }
 
         gridCells[column, row] = null;
+    }
+
+    // Returns the highest tile value currently present on the grid
+    public int GetHighestTileValue()
+    {
+        int highest = 0;
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                if (gridCells[x, y] != null && gridCells[x, y].Value > highest)
+                {
+                    highest = gridCells[x, y].Value;
+                }
+            }
+        }
+        return highest;
     }
 }

@@ -11,7 +11,13 @@ public class GameOverManager2048 : MonoBehaviour
     [SerializeField] private TextMeshProUGUI gameOverCoinsText; // Assign in inspector
     [SerializeField] private int baseGameOverCoinReward = 5;
     [SerializeField] private ScoreManager2048 scoreManager; // Reference to score manager
+
+    [Header("Highest Tile Display")]
+    [SerializeField] private GameObject tilePrefab;           // Same Tile prefab used by the grid
+    [SerializeField] private Transform highestTileContainer;  // A RectTransform at (0,0,0) on the game over panel
+
     private bool isGameOver = false;
+    private GameObject spawnedHighestTile; // Keep reference so we can destroy on restart
 
     private void Start()
     {
@@ -100,7 +106,7 @@ public class GameOverManager2048 : MonoBehaviour
     {
         isGameOver = true;
         Debug.Log("GAME OVER! Grid is full and no more moves possible.");
-        // Show game over UI panel
+
         if (gameOverPanel != null)
         {
             // Set the score text
@@ -124,9 +130,56 @@ public class GameOverManager2048 : MonoBehaviour
                 CoinManager2048.Instance.AddCoins(coinReward);
             }
 
+            // Show highest tile reached using the real tile prefab
+            ShowHighestTile();
+
             // Show the panel
             gameOverPanel.SetActive(true);
         }
+    }
+
+    private void ShowHighestTile()
+    {
+        // Destroy any previously spawned tile (e.g. from a previous game)
+        if (spawnedHighestTile != null)
+        {
+            Destroy(spawnedHighestTile);
+            spawnedHighestTile = null;
+        }
+
+        if (tilePrefab == null || highestTileContainer == null || gridManager == null)
+        {
+            Debug.LogWarning("GameOverManager2048: tilePrefab or highestTileContainer not assigned. Cannot show highest tile.");
+            return;
+        }
+
+        int highestValue = gridManager.GetHighestTileValue();
+        if (highestValue <= 0)
+        {
+            Debug.LogWarning("GameOverManager2048: No tiles found on the grid.");
+            return;
+        }
+
+        // Instantiate the tile as a child of the container (positioned at 0,0,0 on the game over canvas)
+        spawnedHighestTile = Instantiate(tilePrefab, highestTileContainer);
+
+        // Reset local transform so it sits exactly at the container's anchor point
+        RectTransform rt = spawnedHighestTile.GetComponent<RectTransform>();
+        if (rt != null)
+        {
+            rt.anchoredPosition = Vector2.zero;
+            rt.localScale = Vector3.one;
+        }
+
+        // Initialize the tile with the highest value (applies correct color + number via Tile2048)
+        Tile2048 tile = spawnedHighestTile.GetComponent<Tile2048>();
+        if (tile != null)
+        {
+            tile.EnableLandingBounce = false; // No bounce animation on display tile
+            tile.Initialize(highestValue);
+        }
+
+        Debug.Log($"GameOverManager2048: Displayed highest tile with value {highestValue}.");
     }
 
     private int CalculateCoinReward()
@@ -145,6 +198,13 @@ public class GameOverManager2048 : MonoBehaviour
         if (gameOverPanel != null)
         {
             gameOverPanel.SetActive(false);
+        }
+
+        // Destroy the displayed highest tile so it doesn't linger
+        if (spawnedHighestTile != null)
+        {
+            Destroy(spawnedHighestTile);
+            spawnedHighestTile = null;
         }
 
         ResetGameOver();

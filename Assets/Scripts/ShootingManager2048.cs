@@ -400,20 +400,19 @@ public class ShootingManager2048 : MonoBehaviour, IPointerClickHandler, IPointer
         }
     }
 
-    // Update this helper method to find a direct merge target in a full column
+    // Only allow merging with the BOTTOM tile of a full column.
+    // A new tile travels upward from below and can only physically reach
+    // the lowest tile in the column — merging through tiles mid-column
+    // causes the "tile flies to the top" visual bug.
     private int FindDirectMergeRowInFullColumn(int column, int valueToShoot)
     {
-        // Check all tiles in the column for a match, not just the bottom one
-        for (int row = gridManager.Height - 1; row >= 0; row--)
+        int bottomRow = gridManager.Height - 1;
+        Tile2048 bottomTile = gridManager.GetTileAt(column, bottomRow);
+        if (bottomTile != null && bottomTile.Value == valueToShoot)
         {
-            Tile2048 tile = gridManager.GetTileAt(column, row);
-            if (tile != null && tile.Value == valueToShoot)
-            {
-                return row;
-            }
+            return bottomRow;
         }
-
-        return -1; // No mergeable tile found
+        return -1; // Bottom tile doesn't match — column is blocked
     }
 
     // Update ShootProjectile to handle gravity during shooting
@@ -578,8 +577,30 @@ public class ShootingManager2048 : MonoBehaviour, IPointerClickHandler, IPointer
         {
             if (directMergeRow >= 0)
             {
-                // Direct merge with the existing tile
-                gridManager.DirectlyMergeTiles(column, directMergeRow, projectile);
+                // Re-validate: during the tile's flight a chain reaction may have
+                // merged or moved the target tile, making it invalid.
+                Tile2048 targetTile = gridManager.GetTileAt(column, directMergeRow);
+                if (targetTile != null && targetTile.Value == tileValue)
+                {
+                    // Target still valid — merge normally
+                    gridManager.DirectlyMergeTiles(column, directMergeRow, projectile);
+                }
+                else
+                {
+                    // Target gone — fall back to placing in any available empty row
+                    int fallbackRow = gridManager.GetEmptyRowInColumn(column);
+                    if (fallbackRow >= 0)
+                    {
+                        gridManager.PlaceProjectileInCell(column, fallbackRow, projectile);
+                    }
+                    else
+                    {
+                        // No valid placement at all — discard the shot
+                        Destroy(projectile);
+                        isShooting = false;
+                        yield break;
+                    }
+                }
             }
             else
             {
@@ -608,7 +629,12 @@ public class ShootingManager2048 : MonoBehaviour, IPointerClickHandler, IPointer
             }
         }
 
-        // Add a short delay before allowing another shot
+        // Wait for ALL gravity/merge chain-reactions that were kicked off by this shot
+        // to fully finish before unlocking the next shot.
+        // Without this, rapid spam can fire the next tile into a mid-shift grid.
+        yield return StartCoroutine(WaitForGravityToComplete());
+
+        // Small buffer frame before allowing another shot
         yield return new WaitForSeconds(0.05f);
 
         isShooting = false;
