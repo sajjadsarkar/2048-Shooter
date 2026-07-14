@@ -135,10 +135,10 @@ public class GameOverManager2048 : MonoBehaviour
                 gameOverCoinsTween.Kill();
                 gameOverCoinsTween = DOTween.To(() => 0f, x =>
                 {
-                    gameOverCoinsText.text = "+" + NumberFormatter.FormatNumber(Mathf.RoundToInt(x));
+                    gameOverCoinsText.text = NumberFormatter.FormatNumber(Mathf.RoundToInt(x));
                 }, coinReward, 1f)
                 .SetEase(Ease.OutCubic)
-                .OnComplete(() => gameOverCoinsText.text = "+" + NumberFormatter.FormatNumber(coinReward));
+                .OnComplete(() => gameOverCoinsText.text = NumberFormatter.FormatNumber(coinReward));
             }
 
             // Award coins
