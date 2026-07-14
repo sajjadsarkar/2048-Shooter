@@ -155,6 +155,12 @@ public class GameOverManager2048 : MonoBehaviour
             scoreManager.ResetScore();
         }
 
+        // Reset coins for the new game session
+        if (CoinManager2048.Instance != null)
+        {
+            CoinManager2048.Instance.ResetCoins();
+        }
+
         // Call reset on the grid manager (you'll need to implement this)
         if (gridManager != null)
         {

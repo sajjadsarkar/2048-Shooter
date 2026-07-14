@@ -30,8 +30,8 @@ public class CoinManager2048 : MonoBehaviour
             return;
         }
 
-        // Load saved coins
-        LoadCoins();
+        // Initialize coins to 0 (game-based)
+        coins = 0;
     }
 
     private void Start()
@@ -40,13 +40,20 @@ public class CoinManager2048 : MonoBehaviour
         UpdateCoinDisplay();
     }
 
+    public void ResetCoins()
+    {
+        coins = 0;
+        UpdateCoinDisplay();
+        OnCoinsChanged?.Invoke(coins);
+        Debug.Log("Coins reset to 0 for a new game.");
+    }
+
     public void AddCoins(int amount)
     {
         if (amount <= 0) return;
 
         coins += amount;
         UpdateCoinDisplay();
-        SaveCoins();
 
         // Trigger event
         OnCoinsChanged?.Invoke(coins);
@@ -71,7 +78,6 @@ public class CoinManager2048 : MonoBehaviour
         // Deduct coins
         coins -= amount;
         UpdateCoinDisplay();
-        SaveCoins();
 
         // Trigger event
         OnCoinsChanged?.Invoke(coins);
@@ -83,17 +89,6 @@ public class CoinManager2048 : MonoBehaviour
     public int GetCoins()
     {
         return coins;
-    }
-
-    private void LoadCoins()
-    {
-        coins = PlayerPrefs.GetInt(CoinsKey, 0);
-    }
-
-    private void SaveCoins()
-    {
-        PlayerPrefs.SetInt(CoinsKey, coins);
-        PlayerPrefs.Save();
     }
 
     private void UpdateCoinDisplay()
@@ -121,9 +116,12 @@ public class CoinManager2048 : MonoBehaviour
     // Add coins based on merged value
     public void AddCoinsFromMerge(int mergedValue, int combo = 1)
     {
-        // Simple formula: log2(value) with combo multiplier
-        int baseCoins = Mathf.Max(1, Mathf.FloorToInt(Mathf.Log(mergedValue, 2)));
-        int comboBonus = combo > 1 ? combo / 2 : 0;
+        // Only award coins for merges of 64 or higher to keep average coins per game around 20-30
+        if (mergedValue < 64) return;
+
+        // Scale down: log2(64) is 6, so subtract 5 to get 1 coin. 128 -> 2 coins, etc.
+        int baseCoins = Mathf.Max(1, Mathf.FloorToInt(Mathf.Log(mergedValue, 2)) - 5);
+        int comboBonus = combo > 2 ? 1 : 0; // Minimal combo bonus
         int coinsToAdd = baseCoins + comboBonus;
 
         AddCoins(coinsToAdd);
