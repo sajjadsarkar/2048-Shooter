@@ -24,6 +24,7 @@ public class GridManager2048 : MonoBehaviour
     private Coroutine comboResetCoroutine;
     private bool comboTextShown = false;
 
+
     // Modified to store tile references instead of just GameObjects
     private Tile2048[,] gridCells;
 

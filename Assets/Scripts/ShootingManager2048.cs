@@ -102,6 +102,7 @@ public class ShootingManager2048 : MonoBehaviour, IPointerClickHandler, IPointer
         StartCoroutine(AnimatePreviewTileSpawn(rt));
     }
 
+
     // Add new coroutine for the preview tile spawn animation
     private IEnumerator AnimatePreviewTileSpawn(RectTransform rectTransform)
     {
