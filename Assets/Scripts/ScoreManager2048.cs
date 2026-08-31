@@ -58,6 +58,13 @@ public class ScoreManager2048 : MonoBehaviour
         return bestScore;
     }
 
+    public void SetScoreForUndo(int score)
+    {
+        currentScore = score;
+        AnimatedNumberText.SetImmediate(scoreText, currentScore);
+    }
+
+
     // Reset score to zero (optional method for game reset)
     public void ResetScore()
     {

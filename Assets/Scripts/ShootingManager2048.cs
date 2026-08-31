@@ -27,6 +27,11 @@ public class ShootingManager2048 : MonoBehaviour, IPointerClickHandler, IPointer
     // Add a reference to the game over manager
     private GameOverManager2048 gameOverManager;
 
+    private ScoreManager2048 scoreManager;
+    private int previousTileValue;
+    private int previousScore;
+    private bool hasUndoMove;
+
     // Ghost preview variables
     private bool isHolding = false;
     private int currentPreviewColumn = -1;
@@ -52,11 +57,19 @@ public class ShootingManager2048 : MonoBehaviour, IPointerClickHandler, IPointer
         // Find the game over manager
         gameOverManager = FindObjectOfType<GameOverManager2048>();
 
+        // Find the score manager
+        scoreManager = FindObjectOfType<ScoreManager2048>();
+
         // Create the initial preview tile
         CreatePreviewTile();
     }
 
     private void CreatePreviewTile()
+    {
+        CreatePreviewTile(GetRandomStartingValue());
+    }
+
+    private void CreatePreviewTile(int value)
     {
         // If there's already a preview tile, destroy it
         if (previewTile != null)
@@ -64,8 +77,7 @@ public class ShootingManager2048 : MonoBehaviour, IPointerClickHandler, IPointer
             Destroy(previewTile);
         }
 
-        // Generate a random value for the next tile
-        nextTileValue = GetRandomStartingValue();
+        nextTileValue = value;
 
         // Determine which parent to use for the preview tile
         Transform parent = previewParent != null ? previewParent : gridManager.GetGridParent();
@@ -348,12 +360,41 @@ public class ShootingManager2048 : MonoBehaviour, IPointerClickHandler, IPointer
             // Calculate the column
             int column = Mathf.FloorToInt(adjustedX / (gridManager.TileSizeX + gridManager.Spacing));
 
-            // Validate the column is within bounds
             if (column >= 0 && column < gridManager.Width)
             {
                 ShootAtColumn(column);
             }
         }
+    }
+
+    public void SaveStateForUndo()
+    {
+        if (gridManager == null || isShooting)
+        {
+            return;
+        }
+
+        gridManager.SaveUndoState();
+        previousTileValue = nextTileValue;
+        previousScore = scoreManager != null ? scoreManager.GetScore() : 0;
+        hasUndoMove = true;
+    }
+
+    public bool UndoLastMove()
+    {
+        if (gridManager == null || isShooting || gridManager.IsApplyingGravity || !hasUndoMove || !gridManager.RestoreUndoState())
+        {
+            return false;
+        }
+
+        if (scoreManager != null)
+        {
+            scoreManager.SetScoreForUndo(previousScore);
+        }
+
+        hasUndoMove = false;
+        CreatePreviewTile(previousTileValue);
+        return true;
     }
 
     // New public method to shoot at a specific column
@@ -375,6 +416,9 @@ public class ShootingManager2048 : MonoBehaviour, IPointerClickHandler, IPointer
             // If column has empty space
             if (targetRow >= 0)
             {
+                // Save the board and current shooter tile before this move.
+                SaveStateForUndo();
+
                 // Start the shooting coroutine with the preview tile's value
                 StartCoroutine(ShootProjectile(column, targetRow, valueToShoot));
 
@@ -387,6 +431,9 @@ public class ShootingManager2048 : MonoBehaviour, IPointerClickHandler, IPointer
                 int directMergeRow = FindDirectMergeRowInFullColumn(column, valueToShoot);
                 if (directMergeRow >= 0)
                 {
+                    // Save the board and current shooter tile before this move.
+                    SaveStateForUndo();
+
                     // We can merge - shoot at the merge target
                     StartCoroutine(ShootProjectile(column, directMergeRow, valueToShoot, true));
 

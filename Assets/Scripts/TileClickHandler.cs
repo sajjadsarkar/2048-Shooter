@@ -55,6 +55,8 @@ public class TileClickHandler : MonoBehaviour, IPointerClickHandler
                 {
                     Debug.Log($"Destroying tile at position: {tilePosition.x}, {tilePosition.y}");
 
+                    shootingManager.SaveStateForUndo();
+
                     // Remove tile from grid
                     DestroyTile(tilePosition.x, tilePosition.y);
 

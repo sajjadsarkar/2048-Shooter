@@ -27,6 +27,9 @@ public class GridManager2048 : MonoBehaviour
 
     // Modified to store tile references instead of just GameObjects
     private Tile2048[,] gridCells;
+    private int[,] undoValues;
+    private bool hasUndoState;
+
 
     // Track if gravity operations are in progress
     // Counter instead of bool — multiple columns can run gravity simultaneously;
@@ -738,6 +741,70 @@ public class GridManager2048 : MonoBehaviour
         }
 
         gridCells[column, row] = null;
+    }
+
+    public void SaveUndoState()
+    {
+        undoValues = new int[width, height];
+
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                undoValues[x, y] = gridCells[x, y] != null ? gridCells[x, y].Value : 0;
+            }
+        }
+
+        hasUndoState = true;
+    }
+
+    public bool RestoreUndoState()
+    {
+        if (!hasUndoState || undoValues == null || tilePrefab == null)
+        {
+            return false;
+        }
+
+        List<GameObject> tiles = new List<GameObject>();
+        for (int i = 0; i < gridParent.childCount; i++)
+        {
+            Tile2048 tile = gridParent.GetChild(i).GetComponent<Tile2048>();
+            if (tile != null)
+            {
+                tiles.Add(tile.gameObject);
+            }
+        }
+
+        foreach (GameObject tile in tiles)
+        {
+            Destroy(tile);
+        }
+
+        gridCells = new Tile2048[width, height];
+
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                if (undoValues[x, y] == 0)
+                {
+                    continue;
+                }
+
+                GameObject tileObject = Instantiate(tilePrefab, gridParent);
+                RectTransform rectTransform = tileObject.GetComponent<RectTransform>();
+                rectTransform.sizeDelta = new Vector2(tileSizeX, tileSizeY);
+                rectTransform.anchoredPosition = GetCellPosition(x, y);
+
+                Tile2048 tile = tileObject.GetComponent<Tile2048>();
+                tile.Initialize(undoValues[x, y]);
+                gridCells[x, y] = tile;
+                tileObject.name = $"Tile_{x}_{y}";
+            }
+        }
+
+        hasUndoState = false;
+        return true;
     }
 
     public int GetHighestTileValue()
