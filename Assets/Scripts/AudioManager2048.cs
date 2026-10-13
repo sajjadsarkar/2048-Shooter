@@ -29,17 +29,7 @@ public class AudioManager2048 : MonoBehaviour
 
     private void Awake()
     {
-        // Singleton pattern
-        if (Instance == null)
-        {
-            Instance = this;
-            DontDestroyOnLoad(gameObject);
-        }
-        else
-        {
-            Destroy(gameObject);
-            return;
-        }
+        Instance = this;
 
         // Create audio sources if they don't exist
         if (effectsSource == null)

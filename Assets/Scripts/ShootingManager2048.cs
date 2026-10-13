@@ -166,54 +166,17 @@ public class ShootingManager2048 : MonoBehaviour, IPointerClickHandler, IPointer
 
     public void OnPointerUp(PointerEventData eventData)
     {
-        if (isShooting) return;
-
-        if (isHolding && ghostTile != null && currentPreviewColumn >= 0)
+        if (!isShooting && isHolding && ghostTile != null && currentPreviewColumn >= 0)
         {
-            // If we were holding and have a valid preview, shoot at that column
             ShootAtColumn(currentPreviewColumn);
         }
-        else if (!isHolding)
-        {
-            // Handle regular click (not a hold) using existing click logic
-            HandleClick(eventData);
-        }
 
-        // Clean up
         isHolding = false;
         DestroyGhostTile();
         if (holdCoroutine != null)
         {
             StopCoroutine(holdCoroutine);
             holdCoroutine = null;
-        }
-    }
-
-    private void HandleClick(PointerEventData eventData)
-    {
-        Vector2 localPoint;
-        RectTransform gridRect = gridManager.GetGridParent().GetComponent<RectTransform>();
-
-        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            gridRect,
-            eventData.position,
-            eventData.pressEventCamera,
-            out localPoint))
-        {
-            // Calculate the total width of the grid
-            float gridWidth = gridManager.Width * (gridManager.TileSizeX + gridManager.Spacing) - gridManager.Spacing;
-
-            // Adjust the click position relative to the grid's top-left corner
-            float adjustedX = localPoint.x + gridWidth / 2;
-
-            // Calculate the column
-            int column = Mathf.FloorToInt(adjustedX / (gridManager.TileSizeX + gridManager.Spacing));
-
-            // Validate the column is within bounds
-            if (column >= 0 && column < gridManager.Width)
-            {
-                ShootAtColumn(column);
-            }
         }
     }
 

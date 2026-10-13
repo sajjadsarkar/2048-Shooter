@@ -20,18 +20,7 @@ public class CoinManager2048 : MonoBehaviour
     private void Awake()
     {
         // Singleton pattern
-        if (Instance == null)
-        {
-            Instance = this;
-            DontDestroyOnLoad(gameObject);
-        }
-        else
-        {
-            Destroy(gameObject);
-            return;
-        }
-
-        // Initialize coins to 0 (game-based)
+        Instance = this;
         coins = 0;
     }
 

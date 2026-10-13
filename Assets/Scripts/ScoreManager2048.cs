@@ -10,6 +10,7 @@ public class ScoreManager2048 : MonoBehaviour
     private int currentScore = 0;
     private int bestScore = 0;
     private const string BestScoreKey = "2048_BestScore"; // Key for PlayerPrefs
+    private const string BestBlockKey = "2048_BestBlock"; // Key for PlayerPrefs, tracks the highest tile value ever reached
 
     private void Start()
     {
@@ -21,6 +22,7 @@ public class ScoreManager2048 : MonoBehaviour
     public void AddScore(int points)
     {
         currentScore += points;
+        UpdateBestBlock(points);
 
         // Animate score count-up (0 -> target on first gain)
         AnimatedNumberText.Animate(scoreText, currentScore);
@@ -32,9 +34,6 @@ public class ScoreManager2048 : MonoBehaviour
             AnimatedNumberText.Animate(bestScoreText, bestScore);
             SaveBestScore();
         }
-
-        // Log the score change (optional, for debugging)
-        Debug.Log($"Score increased by {points}. New score: {currentScore}");
     }
 
     private void LoadBestScore()
@@ -56,6 +55,37 @@ public class ScoreManager2048 : MonoBehaviour
     public int GetBestScore()
     {
         return bestScore;
+    }
+
+    /// <summary>
+    /// Compares the given tile value against the saved best block and persists it via
+    /// PlayerPrefs if it is a new record. Call this when a run ends (e.g. on game over).
+    /// </summary>
+    public void UpdateBestBlock(int highestTileValue)
+    {
+        if (highestTileValue <= GetSavedBestBlock())
+            return;
+
+        PlayerPrefs.SetInt(BestBlockKey, highestTileValue);
+        PlayerPrefs.Save();
+    }
+
+    /// <summary>
+    /// Reads the all-time best score from local save without requiring a ScoreManager2048 instance.
+    /// Used by menus that need to display the record before gameplay starts.
+    /// </summary>
+    public static int GetSavedBestScore()
+    {
+        return PlayerPrefs.GetInt(BestScoreKey, 0);
+    }
+
+    /// <summary>
+    /// Reads the all-time highest block value reached from local save without requiring a
+    /// ScoreManager2048 instance. Used by menus that need to display the record before gameplay starts.
+    /// </summary>
+    public static int GetSavedBestBlock()
+    {
+        return PlayerPrefs.GetInt(BestBlockKey, 0);
     }
 
     public void SetScoreForUndo(int score)

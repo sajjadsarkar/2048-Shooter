@@ -26,24 +26,16 @@ public class Tile2048 : MonoBehaviour
 
     static Tile2048()
     {
-        Color[] t =
+        int[] t =
         {
-            Hex(0x68ADF1), Hex(0xFF863B), Hex(0xF8829C), Hex(0x6DC29C), Color.black, Color.black,
-            Hex(0x62D8D8), Hex(0xFF6269), Hex(0x97CE5F), Hex(0xEF83DB), Hex(0xF0A151)
+            0x2796FD, 0xFF9A36, 0xFD6280, 0x19C8A6, 0xA044FC, 0xFDC713,
+            0x05D4FF, 0xFC4C4F, 0x73D91C, 0xFC4093, 0xFDB71D
         };
-        Color[] s =
+        for (int i = 0; i < 11; i++)
         {
-            Hex(0x048EFF), Hex(0xFFB575), Hex(0xFF5384), Hex(0x06AD7E), Color.black, Color.black,
-            Hex(0x00AECD), Hex(0xFF3038), Hex(0x55AA00), Hex(0xEF37F9), Hex(0xFFE761)
-        };
-        for (int i = 0; i < 11; i++) { tileColors[i] = t[i]; strokeColors[i] = s[i]; }
-
-        // Fill the gaps (32 = index 4, 64 = index 5) with a similar but slightly
-        // shifted gradient between the neighbouring defined colors so they don't match.
-        tileColors[4] = Color.Lerp(tileColors[3], tileColors[6], 0.33f);
-        tileColors[5] = Color.Lerp(tileColors[3], tileColors[6], 0.66f);
-        strokeColors[4] = Color.Lerp(strokeColors[3], strokeColors[6], 0.33f);
-        strokeColors[5] = Color.Lerp(strokeColors[3], strokeColors[6], 0.66f);
+            tileColors[i] = Hex(t[i]);
+            strokeColors[i] = Color.Lerp(tileColors[i], Color.black, 0.12f);
+        }
     }
 
     private static Color Hex(int hex)

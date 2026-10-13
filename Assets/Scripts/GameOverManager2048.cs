@@ -18,6 +18,7 @@ public class GameOverManager2048 : MonoBehaviour
     [SerializeField] private Transform highestTileContainer;  // A RectTransform at (0,0,0) on the game over panel
 
     private bool isGameOver = false;
+    public bool IsGameOver => isGameOver;
     private GameObject spawnedHighestTile; // Keep reference so we can destroy on restart
 
     private Tween gameOverScoreTween;
@@ -59,24 +60,18 @@ public class GameOverManager2048 : MonoBehaviour
 
     private bool IsGridFullWithNoMoves()
     {
-        Debug.Log("Checking if game is over...");
-
         // Check if any cells are empty
         for (int x = 0; x < gridManager.Width; x++)
         {
             if (gridManager.GetEmptyRowInColumn(x) >= 0)
             {
-                Debug.Log($"Found empty cell in column {x}, game is not over");
                 return false; // Found an empty cell, game is not over
             }
         }
 
-        Debug.Log("Grid is completely full, checking for possible merges...");
-
         // If we get here, the grid is full
         // Now check if the preview tile can merge with ANY bottom row tile (not just in the same column)
         int previewValue = shootingManager.GetNextTileValue();
-        Debug.Log($"Preview tile value: {previewValue}");
 
         for (int x = 0; x < gridManager.Width; x++)
         {
@@ -84,12 +79,10 @@ public class GameOverManager2048 : MonoBehaviour
             Tile2048 bottomTile = gridManager.GetTileAt(x, gridManager.Height - 1);
             if (bottomTile != null && bottomTile.Value == previewValue)
             {
-                Debug.Log($"Found mergeable tile in column {x}, game is not over");
                 return false; // Found a mergeable tile, game is not over
             }
         }
 
-        Debug.Log("No possible merges found. GAME OVER confirmed!");
         return true; // Grid is full and no merges possible
     }
 
@@ -177,6 +170,12 @@ public class GameOverManager2048 : MonoBehaviour
             return;
         }
 
+        // Persist the highest block reached so the main menu can display the all-time record
+        if (scoreManager != null)
+        {
+            scoreManager.UpdateBestBlock(highestValue);
+        }
+
         // Instantiate the tile as a child of the container (positioned at 0,0,0 on the game over canvas)
         spawnedHighestTile = Instantiate(tilePrefab, highestTileContainer);
 
@@ -217,6 +216,7 @@ public class GameOverManager2048 : MonoBehaviour
             CoinManager2048.Instance.ResetCoins();
         }
 
+        MainMenuManager2048.SkipMenu = true;
         // Reload the current scene to reset everything (grid, score, tiles, preview, etc.)
         UnityEngine.SceneManagement.SceneManager.LoadScene(
             UnityEngine.SceneManagement.SceneManager.GetActiveScene().name
