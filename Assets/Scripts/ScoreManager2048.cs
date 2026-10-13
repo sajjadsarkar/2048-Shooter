@@ -26,6 +26,8 @@ public class ScoreManager2048 : MonoBehaviour
 
         // Animate score count-up (0 -> target on first gain)
         AnimatedNumberText.Animate(scoreText, currentScore);
+        scoreText.transform.DOComplete();
+        scoreText.transform.DOPunchScale(Vector3.one * 0.2f, 0.3f, 6);
 
         // Check if current score is a new best
         if (currentScore > bestScore)

@@ -22,6 +22,7 @@ public class ButtonSmallOnHold : MonoBehaviour, IPointerDownHandler, IPointerUpH
 
     public void OnPointerDown(PointerEventData eventData)
     {
+        if (AudioManager2048.Instance != null) AudioManager2048.Instance.PlayClickSound();
         // Kill any existing tween before starting a new one
         if (currentTween != null && currentTween.IsActive())
         {

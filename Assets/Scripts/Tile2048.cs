@@ -150,14 +150,15 @@ public class Tile2048 : MonoBehaviour
         {
             DOTween.Kill(rt);
             rt.localScale = Vector3.one;
+            rt.localRotation = Quaternion.identity;
 
             Sequence seq = DOTween.Sequence();
             // Soft Squash (Y squashes down, X expands slightly for a squishy/soft feel)
-            seq.Append(rt.DOScale(new Vector3(1.05f, 0.92f, 1f), 0.06f).SetEase(Ease.OutSine));
+            seq.Append(rt.DOScale(new Vector3(1.1f, 0.89f, 1f), 0.07f).SetEase(Ease.OutSine));
             // Soft Stretch (Y stretches up, X shrinks slightly)
-            seq.Append(rt.DOScale(new Vector3(0.97f, 1.04f, 1f), 0.06f).SetEase(Ease.InOutSine));
+            seq.Append(rt.DOScale(new Vector3(0.95f, 1.07f, 1f), 0.07f).SetEase(Ease.InOutSine));
             // Smooth Settle
-            seq.Append(rt.DOScale(Vector3.one, 0.08f).SetEase(Ease.OutSine));
+            seq.Append(rt.DOScale(Vector3.one, 0.12f).SetEase(Ease.OutBack));
             seq.SetTarget(rt);
             seq.Play();
         }

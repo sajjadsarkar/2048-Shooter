@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using System.Collections;
 using System.Collections.Generic;
+using DG.Tweening;
 
 public class ShootingManager2048 : MonoBehaviour, IPointerClickHandler, IPointerDownHandler, IPointerUpHandler, IDragHandler
 {
@@ -111,43 +112,18 @@ public class ShootingManager2048 : MonoBehaviour, IPointerClickHandler, IPointer
 
         // Start with a small scale and animate to full size
         rt.localScale = new Vector3(0.2f, 0.2f, 1f);
-        StartCoroutine(AnimatePreviewTileSpawn(rt));
-    }
-
-
-    // Add new coroutine for the preview tile spawn animation
-    private IEnumerator AnimatePreviewTileSpawn(RectTransform rectTransform)
-    {
-        float duration = 0.2f; // Animation duration in seconds
-        float elapsedTime = 0f;
-        Vector3 startScale = new Vector3(0.2f, 0.2f, 1f);
-        Vector3 targetScale = Vector3.one;
-
-        while (elapsedTime < duration)
+        rt.DOScale(1f, 0.3f).SetEase(Ease.OutBack).OnComplete(() =>
         {
-            // Ensure the RectTransform still exists
-            if (rectTransform == null)
-                yield break;
-
-            // Calculate smoothed scale value (using smoothstep for nicer easing)
-            float t = elapsedTime / duration;
-            float smoothT = t * t * (3f - 2f * t); // Smoothstep formula
-
-            // Apply the scale
-            rectTransform.localScale = Vector3.Lerp(startScale, targetScale, smoothT);
-
-            elapsedTime += Time.deltaTime;
-            yield return null;
-        }
-
-        // Ensure we end at exactly the target scale
-        if (rectTransform != null)
-            rectTransform.localScale = targetScale;
+            if (rt != null) rt.DOScale(1.04f, 0.6f).SetEase(Ease.InOutSine).SetLoops(-1, LoopType.Yoyo).SetLink(rt.gameObject);
+        });
     }
+
+
+    private static bool HammerLock => PowerUpsManager2048.Instance != null && PowerUpsManager2048.Instance.InputLocked;
 
     public void OnPointerDown(PointerEventData eventData)
     {
-        if (isShooting) return;
+        if (isShooting || HammerLock) return;
 
         isHolding = true;
         if (holdCoroutine != null)
@@ -303,7 +279,7 @@ public class ShootingManager2048 : MonoBehaviour, IPointerClickHandler, IPointer
 
     public void OnPointerClick(PointerEventData eventData)
     {
-        if (isShooting) return;
+        if (isShooting || HammerLock) return;
 
         Vector2 localPoint;
         RectTransform gridRect = gridManager.GetGridParent().GetComponent<RectTransform>();
@@ -345,7 +321,7 @@ public class ShootingManager2048 : MonoBehaviour, IPointerClickHandler, IPointer
 
     public bool UndoLastMove()
     {
-        if (gridManager == null || isShooting || gridManager.IsApplyingGravity || !hasUndoMove || !gridManager.RestoreUndoState())
+        if (gridManager == null || isShooting || gridManager.IsApplyingGravity || !hasUndoMove || !gridManager.RestoreUndoState(projectilePrefab))
         {
             return false;
         }
@@ -363,7 +339,7 @@ public class ShootingManager2048 : MonoBehaviour, IPointerClickHandler, IPointer
     // New public method to shoot at a specific column
     public void ShootAtColumn(int column)
     {
-        if (isShooting) return;
+        if (isShooting || HammerLock) return;
 
         // Validate the column is within bounds
         if (column >= 0 && column < gridManager.Width)
@@ -375,6 +351,8 @@ public class ShootingManager2048 : MonoBehaviour, IPointerClickHandler, IPointer
 
             // Get the value from the preview tile
             int valueToShoot = nextTileValue;
+
+            if (AudioManager2048.Instance != null) AudioManager2048.Instance.PlayShootSound();
 
             // If column has empty space
             if (targetRow >= 0)
@@ -405,7 +383,8 @@ public class ShootingManager2048 : MonoBehaviour, IPointerClickHandler, IPointer
                 }
                 else
                 {
-                    Debug.Log($"Column {column} is full and no merge possible!");
+                    if (AudioManager2048.Instance != null) AudioManager2048.Instance.PlayBlockedSound();
+                    if (previewTile != null) previewTile.transform.DOShakePosition(0.25f, new Vector3(15f, 0f, 0f), 25);
                 }
             }
         }
@@ -491,6 +470,8 @@ public class ShootingManager2048 : MonoBehaviour, IPointerClickHandler, IPointer
         }
         tile.Initialize(tileValue);
 
+        rt.localScale = new Vector3(0.88f, 1.17f, 1f);
+
         // Create path highlight effect
         GameObject pathHighlight = CreatePathHighlight(startPosition, targetPosition, tile.GetComponent<Image>().color);
 
@@ -522,6 +503,9 @@ public class ShootingManager2048 : MonoBehaviour, IPointerClickHandler, IPointer
                 UpdatePathHighlight(pathHighlight, startPosition, finalPosition, rt.anchoredPosition);
             }
 
+            if (Time.frameCount % 2 == 0)
+                Juice.Burst(gridManager.GetGridParent(), rt.anchoredPosition - new Vector2(0, gridManager.TileSizeY * 0.4f), tile.GetComponent<Image>().color, 1, gridManager.TileSizeX * 0.2f);
+
             yield return null;
         }
 
@@ -533,6 +517,8 @@ public class ShootingManager2048 : MonoBehaviour, IPointerClickHandler, IPointer
             {
                 tile.PlayLandingBounce();
             }
+            Juice.Burst(gridManager.GetGridParent(), finalPosition, tile.GetComponent<Image>().color, 5, gridManager.TileSizeX * 0.55f);
+            Juice.Shake(gridManager.GetGridParent(), 2f);
         }
 
         // Destroy the path highlight
@@ -802,7 +788,7 @@ public class ShootingManager2048 : MonoBehaviour, IPointerClickHandler, IPointer
     // New methods to handle preview tile dragging
     public void OnPreviewTileDragStart()
     {
-        if (isShooting) return;
+        if (isShooting || HammerLock) return;
 
         isPreviewDragging = true;
 

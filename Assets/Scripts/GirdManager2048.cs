@@ -211,6 +211,8 @@ public class GridManager2048 : MonoBehaviour
             AudioManager2048.Instance.PlayMergeSound(newValue, currentCombo);
         }
 
+        MergeJuice(column, row, newValue, projectileTile.GetComponent<Image>().color, 1);
+
         if (scoreManager != null)
         {
             scoreManager.AddScore(newValue);
@@ -416,6 +418,7 @@ public class GridManager2048 : MonoBehaviour
 
         centerTile.Value = totalValue;
         Pulse(centerTile);
+        MergeJuice(center.x, center.y, totalValue, centerTile.GetComponent<Image>().color, group.Count);
         PlayMergeFeedback(center.x, center.y, totalValue, centerTile);
 
         lastActiveTilePosition = center;
@@ -442,13 +445,20 @@ public class GridManager2048 : MonoBehaviour
             if (tile == null || rt == null) yield break;
 
             float t = elapsed / duration;
-            rt.anchoredPosition = Vector2.Lerp(start, target, t);
+            rt.anchoredPosition = Vector2.Lerp(start, target, t * t);
             rt.localScale = Vector3.Lerp(Vector3.one, Vector3.zero, t);
             elapsed += Time.deltaTime;
             yield return null;
         }
 
         if (tile != null) Destroy(tile.gameObject);
+    }
+
+    private void MergeJuice(int col, int row, int value, Color color, int tilesMerged)
+    {
+        Juice.Burst(gridParent, GetCellPosition(col, row), color, 7 + tilesMerged * 2, tileSizeX * 0.9f);
+        Juice.Shake(gridParent, Mathf.Clamp(Mathf.Log(value, 2) * 0.75f, 2.5f, 10f));
+        if (value >= 32 || currentCombo >= 2) Juice.Flash(gridParent, new Color(1f, 1f, 1f, 0.18f));
     }
 
     private void Pulse(Tile2048 tile)
@@ -460,8 +470,8 @@ public class GridManager2048 : MonoBehaviour
         rt.localScale = Vector3.one;
 
         Sequence seq = DOTween.Sequence();
-        seq.Append(rt.DOScale(1.3f, 0.1f).SetEase(Ease.OutQuad));
-        seq.Append(rt.DOScale(1.0f, 0.1f).SetEase(Ease.InQuad));
+        seq.Append(rt.DOScale(1.3f, 0.12f).SetEase(Ease.OutQuad));
+        seq.Append(rt.DOScale(1.0f, 0.3f).SetEase(Ease.OutElastic));
         seq.OnComplete(() =>
         {
             if (rt != null) rt.localScale = Vector3.one;
@@ -639,7 +649,7 @@ public class GridManager2048 : MonoBehaviour
                 rectTransform.anchoredPosition = Vector2.Lerp(
                     startPosition,
                     targetPosition,
-                    elapsedTime / duration
+                    Mathf.SmoothStep(0f, 1f, elapsedTime / duration)
                 );
                 elapsedTime += Time.deltaTime;
                 yield return null;
@@ -758,9 +768,9 @@ public class GridManager2048 : MonoBehaviour
         hasUndoState = true;
     }
 
-    public bool RestoreUndoState()
+    public bool RestoreUndoState(GameObject tileObjectPrefab)
     {
-        if (!hasUndoState || undoValues == null || tilePrefab == null)
+        if (!hasUndoState || undoValues == null || tileObjectPrefab == null)
         {
             return false;
         }
@@ -791,12 +801,13 @@ public class GridManager2048 : MonoBehaviour
                     continue;
                 }
 
-                GameObject tileObject = Instantiate(tilePrefab, gridParent);
+                GameObject tileObject = Instantiate(tileObjectPrefab, gridParent);
                 RectTransform rectTransform = tileObject.GetComponent<RectTransform>();
                 rectTransform.sizeDelta = new Vector2(tileSizeX, tileSizeY);
                 rectTransform.anchoredPosition = GetCellPosition(x, y);
 
                 Tile2048 tile = tileObject.GetComponent<Tile2048>();
+                if (tile == null) tile = tileObject.AddComponent<Tile2048>();
                 tile.Initialize(undoValues[x, y]);
                 gridCells[x, y] = tile;
                 tileObject.name = $"Tile_{x}_{y}";

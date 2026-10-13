@@ -23,6 +23,8 @@ public class AudioManager2048 : MonoBehaviour
     // Internal variables
     private float basePitch = 1.0f;
     private int currentComboCount = 0;
+    private AudioSource fxSource;
+    private AudioClip shootClip, blockedClip, gameOverClip, clickClip;
 
     // Singleton instance
     public static AudioManager2048 Instance { get; private set; }
@@ -38,6 +40,13 @@ public class AudioManager2048 : MonoBehaviour
             effectsSource.playOnAwake = false;
         }
 
+        fxSource = gameObject.AddComponent<AudioSource>();
+        fxSource.playOnAwake = false;
+        shootClip = Synth(300f, 900f, 0.15f, 0.5f);
+        blockedClip = Synth(180f, 90f, 0.18f, 0.6f);
+        gameOverClip = Synth(500f, 80f, 0.9f, 0.5f);
+        clickClip = Synth(700f, 500f, 0.06f, 0.4f);
+
         if (musicSource == null)
         {
             musicSource = gameObject.AddComponent<AudioSource>();
@@ -51,6 +60,27 @@ public class AudioManager2048 : MonoBehaviour
         UpdateVolume();
         ResetPitch();
     }
+
+    private static AudioClip Synth(float startHz, float endHz, float seconds, float volume)
+    {
+        const int rate = 44100;
+        var data = new float[(int)(rate * seconds)];
+        float phase = 0f;
+        for (int i = 0; i < data.Length; i++)
+        {
+            float t = (float)i / data.Length;
+            phase += 2f * Mathf.PI * Mathf.Lerp(startHz, endHz, t) / rate;
+            data[i] = Mathf.Sin(phase) * (1f - t) * (1f - t) * volume;
+        }
+        var clip = AudioClip.Create("synth", data.Length, 1, rate, false);
+        clip.SetData(data, 0);
+        return clip;
+    }
+
+    public void PlayShootSound() => fxSource.PlayOneShot(shootClip, masterVolume);
+    public void PlayBlockedSound() => fxSource.PlayOneShot(blockedClip, masterVolume);
+    public void PlayGameOverSound() => fxSource.PlayOneShot(gameOverClip, masterVolume);
+    public void PlayClickSound() => fxSource.PlayOneShot(clickClip, masterVolume);
 
     // Play sound when a tile is placed
     public void PlayTilePlacedSound()
@@ -166,6 +196,7 @@ public class AudioManager2048 : MonoBehaviour
     public void ToggleSoundEffects(bool enabled)
     {
         effectsSource.mute = !enabled;
+        fxSource.mute = !enabled;
     }
 
     // Toggle music on/off

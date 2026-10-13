@@ -21,6 +21,8 @@ public class PreviewTileDragger : MonoBehaviour, IPointerDownHandler, IPointerUp
 
     public void OnPointerDown(PointerEventData eventData)
     {
+        if (PowerUpsManager2048.Instance != null && PowerUpsManager2048.Instance.InputLocked) return;
+
         isDragging = true;
         originalPosition = rectTransform.anchoredPosition;
         shootingManager.OnPreviewTileDragStart();

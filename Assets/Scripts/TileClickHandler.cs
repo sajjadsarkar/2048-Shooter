@@ -1,5 +1,7 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
+using DG.Tweening;
 
 public class TileClickHandler : MonoBehaviour, IPointerClickHandler
 {
@@ -56,12 +58,8 @@ public class TileClickHandler : MonoBehaviour, IPointerClickHandler
                     Debug.Log($"Destroying tile at position: {tilePosition.x}, {tilePosition.y}");
 
                     shootingManager.SaveStateForUndo();
-
-                    // Remove tile from grid
-                    DestroyTile(tilePosition.x, tilePosition.y);
-
-                    // Notify the destruction manager that a tile has been destroyed
                     PowerUpsManager2048.Instance.TileDestroyed();
+                    SwingHammer(tilePosition.x, tilePosition.y);
                 }
             }
             // Check swap mode
@@ -97,6 +95,42 @@ public class TileClickHandler : MonoBehaviour, IPointerClickHandler
         }
 
         return new Vector2Int(-1, -1); // Not found
+    }
+
+    private void SwingHammer(int column, int row)
+    {
+        var tileRect = (RectTransform)transform;
+        var parent = tileRect.parent;
+        var go = new GameObject("Hammer", typeof(RectTransform), typeof(Image));
+        var rt = (RectTransform)go.transform;
+        rt.SetParent(parent, false);
+        rt.sizeDelta = tileRect.sizeDelta * 1.3f;
+        rt.pivot = new Vector2(0.8f, 0.2f);
+        rt.anchoredPosition = tileRect.anchoredPosition;
+        rt.localRotation = Quaternion.Euler(0, 0, 50f);
+        rt.localScale = Vector3.zero;
+
+        var img = go.GetComponent<Image>();
+        img.sprite = PowerUpsManager2048.Instance.HammerSprite;
+        img.preserveAspect = true;
+        img.raycastTarget = false;
+
+        Color color = GetComponent<Image>().color;
+        float burstSize = tileRect.sizeDelta.x;
+
+        DOTween.Sequence()
+            .Append(rt.DOScale(1f, 0.1f).SetEase(Ease.OutBack))
+            .Append(rt.DORotate(new Vector3(0, 0, -35f), 0.12f).SetEase(Ease.InQuad))
+            .AppendCallback(() =>
+            {
+                Juice.Burst(parent, tileRect.anchoredPosition, color, 12, burstSize);
+                Juice.Shake(parent, 8f);
+                Juice.Flash(parent, new Color(1f, 1f, 1f, 0.25f));
+                DestroyTile(column, row);
+                PowerUpsManager2048.Instance.HammerFinished();
+            })
+            .Append(img.DOFade(0f, 0.2f))
+            .OnComplete(() => Destroy(go));
     }
 
     private void DestroyTile(int column, int row)

@@ -102,6 +102,8 @@ public class GameOverManager2048 : MonoBehaviour
     private void GameOver()
     {
         isGameOver = true;
+        if (AudioManager2048.Instance != null) AudioManager2048.Instance.PlayGameOverSound();
+        Juice.Shake(gridManager.GetGridParent(), 6f);
         Debug.Log("GAME OVER! Grid is full and no more moves possible.");
 
         if (gameOverPanel != null)
@@ -184,7 +186,8 @@ public class GameOverManager2048 : MonoBehaviour
         if (rt != null)
         {
             rt.anchoredPosition = Vector2.zero;
-            rt.localScale = Vector3.one;
+            rt.localScale = Vector3.zero;
+            rt.DOScale(1f, 0.5f).SetEase(Ease.OutBack).SetDelay(0.2f);
         }
 
         // Initialize the tile with the highest value (applies correct color + number via Tile2048)
